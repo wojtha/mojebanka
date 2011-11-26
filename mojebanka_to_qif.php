@@ -51,19 +51,27 @@ function mojebanka_parse_files($parameters) {
 
 $parameters = mojebanka_get_params();
 $files = mojebanka_parse_files($parameters);
+$format = strtolower($parameters['format']);
+$formatter = 'mojebanka_to_' . $format;
 
 if (empty($files) || $parameters['help']) {
   print MOJEBANKA_CLI_HELP;
 }
+elseif (!function_exists($formatter)) {
+  print "Chyba: Neplatny format $format.\n\n";
+  print MOJEBANKA_CLI_HELP;
+}
+else {
+  foreach ($files as $file) {
+    // 1. get content
+    $txt = file_get_contents($file);
+    // 2. parse
+    $transactions = mojebanka_txt_parse($txt);
+    // 3. save to file
+    call_user_func($formatter, $transactions);
+  }
+}
 
+//DEBUG
 //print_r($parameters);
 //print_r($files);
-
-//$mojenbanka_txt = "Tisk_20110911000721.txt";
-//$mojenbanka_txt = "Tisk_20110910153349.txt";
-//$mojenbanka_txt = "Tisk_20110921113803.txt";
-//$mojenbanka_txt = "Tisk_20110921115427.txt";
-//$mojenbanka_txt = "Tisk_20111017192159.txt";
-// $mojenbanka_txt = "Tisk_20111125110712.txt";
-//
-// $content = file_get_contents($mojenbanka_txt);
