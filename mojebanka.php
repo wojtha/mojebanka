@@ -1,7 +1,7 @@
 <?php
 
 require dirname(__FILE__) . DIRECTORY_SEPARATOR . 'parse_parameters.inc.php';
-require dirname(__FILE__) . DIRECTORY_SEPARATOR . 'mojebanka_to_qif.inc.php';
+require dirname(__FILE__) . DIRECTORY_SEPARATOR . 'mojebanka.inc.php';
 
 define('MOJEBANKA_CLI_HELP', <<<EOT
 Mojebanka - konvertor transakci 
