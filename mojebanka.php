@@ -8,8 +8,8 @@ Mojebanka - konvertor transakci
 Konvertuje textovy vypis transakci z TXT do QIF nebo CVS formatu.
 
 Pouziti:
-php mojebanka_txt --format=qif Tisk_20110910153349.txt
-php mojebanka_txt --format=cvs *.txt
+php mojebanka.php Tisk_20110910153349.txt
+php mojebanka.php --format=cvs *.txt
 
 Parametry:
 --help         Napoveda - tento text.
