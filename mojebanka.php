@@ -5,15 +5,15 @@ require dirname(__FILE__) . DIRECTORY_SEPARATOR . 'mojebanka.inc.php';
 
 define('MOJEBANKA_CLI_HELP', <<<EOT
 Mojebanka - konvertor transakci 
-Konvertuje textovy vypis transakci z TXT do QIF nebo CVS formatu.
+Konvertuje textovy vypis transakci z TXT do QIF nebo CSV formatu.
 
 Pouziti:
 php mojebanka.php Tisk_20110910153349.txt
-php mojebanka.php --format=cvs *.txt
+php mojebanka.php --format=csv *.txt
 
 Parametry:
 --help         Napoveda - tento text.
---format=qif   Cilovy format: qif, cvs
+--format=qif   Cilovy format: qif, csv
 
 EOT
 );
