@@ -36,7 +36,7 @@ function mojebanka_txt_parse($string) {
     }
 
     $matches = array();
-    if (preg_match('~(\d*/\d{4})[ ]*(\d*)[ ]*(-?\+?\d+,\d{2}+ CZK)[ ]*(\d{2}\.\d{2}.\d{4})\r?\n(|Úhrada|Inkaso)[ ]*(\d+)[ ]*(\d{2}\.\d{2}.\d{4})\r?\n(\d[0-9A-Z -]{14,31})[ ]*(\d+)[ ]*(\d{2}\.\d{2}.\d{4})\r?\nPopis příkazce[ ]*(.+)\r?\nPopis pro příjemce[ ]*(.+)\r?\nSystémový popis[ ]*(.+)~', $cell, $matches)) {
+    if (preg_match('~(\d*/\d{4})[ ]*(\d*)[ ]*(-?\+?\d+,\d{2}+ CZK)[ ]*(\d{2}\.\d{2}.\d{4})\r?\n(|Úhrada|Inkaso|Zahraniční platba IDK vyšlo|Poplatek IDK vyšlo)[ ]*(\d+)[ ]*(\d{2}\.\d{2}.\d{4})\r?\n(\d[0-9A-Z -]{14,31})[ ]*(\d+)[ ]*(\d{2}\.\d{2}.\d{4})\r?\nPopis příkazce[ ]*(.+)\r?\nPopis pro příjemce[ ]*(.+)\r?\nSystémový popis[ ]*(.+)~', $cell, $matches)) {
 
     //  Číslo protiúčtu                VS        Částka       Datum přijetí k zaúčtování
     //  Typ transakce                  KS        a měna                 Datum splatnosti
@@ -76,10 +76,10 @@ function mojebanka_txt_parse($string) {
 
 
 /**
- * Save array of transactions to CVS file.
+ * Save array of transactions to CSV file.
  */
-function mojebanka_to_cvs($transactions) {
-  $filename = 'mojebanka_export_' . date('Y-m-d-H-i-s') . '.cvs';
+function mojebanka_to_csv($transactions) {
+  $filename = 'mojebanka_export_' . date('Y-m-d-H-i-s') . '.csv';
   $csv_file = fopen($filename, 'w+');
   $columns = array('date3', 'type', 'account', 'price', 'var_sym', 'desc1', 'desc2', 'desc3', 'desc4');
   fwrite($csv_file, implode("\t", $columns) . PHP_EOL);
