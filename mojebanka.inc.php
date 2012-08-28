@@ -42,8 +42,8 @@ function mojebanka_txt_parse($string) {
     //  Typ transakce                  KS        a měna                 Datum splatnosti
     //  ID transakce                   SS                               Datum zaúčtování
       $transaction = new stdClass();
-      $transaction->account = $matches[1]; // 94-60576642/8060
-      $transaction->var_sym = $matches[2]; // 8301290723
+      $transaction->account = $matches[1]; // 94-65078642/8060
+      $transaction->var_sym = $matches[2]; // 8256546884
       $transaction->price = $matches[3]; // -1500,00 CZK
       $transaction->date1 = $matches[4]; // 08.09.2011
       $transaction->type = $matches[5]; // Úhrada

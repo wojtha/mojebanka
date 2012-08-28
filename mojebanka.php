@@ -66,9 +66,9 @@ else {
     // 1. get content
     $txt = file_get_contents($file);
     // 2. parse
-    $transactions = mojebanka_txt_parse($txt);
+    $subtitles = mojebanka_txt_parse($txt);
     // 3. save to file
-    call_user_func($formatter, $transactions);
+    call_user_func($formatter, $subtitles);
   }
 }
 
