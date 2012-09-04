@@ -1,6 +1,18 @@
 <?php
 
-define('MOJEBANKA_CELL_DIVIDER', '________________________________________________________________________________');
+define('MOJEBANKA_CELL_DIVIDER', '____________________________________________________________________________________________________');
+
+/**
+ * Converts price to number format.
+ *
+ * Expected input is -d ddd,dd or -d.ddd,dd. Output is -dddd.dd.
+ *
+ * @param $price
+ * @return mixed
+ */
+function mojebanka_convert_price($price) {
+  return str_replace(' ', '', str_replace(',', '.', str_replace('.', ' ', $price)));
+}
 
 /**
  * Parse the txt content to transactions.
@@ -9,57 +21,72 @@ define('MOJEBANKA_CELL_DIVIDER', '______________________________________________
  * @return array
  */
 function mojebanka_txt_parse($string) {
+  mb_internal_encoding('UTF-8');
   $transactions = array();
-  $string = iconv('windows-1250','utf-8', $string);
+  //$string = iconv('windows-1250','utf-8', $string);
   $cells = explode(MOJEBANKA_CELL_DIVIDER, $string);
 
   foreach ($cells as $cell) {
-    $cell = trim($cell, " \r\n\t");
-
-    if (strpos($cell, 'ČÍSLO ÚČTU : ') !== FALSE) {
-      continue;
-    }
-    elseif (strpos($cell, 'Obrat na vrub') !== FALSE) {
-      continue;
-    }
-    elseif (strpos($cell, 'Číslo protiúčtu                VS') !== FALSE) {
-      continue;
-    }
-    elseif (strpos($cell, 'Transakční historie') !== FALSE) {
-      continue;
-    }
-    elseif (strpos($cell, 'Za období      od') !== FALSE) {
-      continue;
-    }
-    elseif (empty($cell)) {
+    if (strpos($cell, "VÝPIS TRANSAKCÍ") !== FALSE || strpos($cell, "Vážená paní, vážený pane") !== FALSE) {
       continue;
     }
 
-    $matches = array();
-    if (preg_match('~(\d*/\d{4})[ ]*(\d*)[ ]*(-?\+?\d+,\d{2}+ CZK)[ ]*(\d{2}\.\d{2}.\d{4})\r?\n(|Úhrada|Inkaso|Zahraniční platba IDK vyšlo|Poplatek IDK vyšlo)[ ]*(\d+)[ ]*(\d{2}\.\d{2}.\d{4})\r?\n(\d[0-9A-Z -]{14,31})[ ]*(\d+)[ ]*(\d{2}\.\d{2}.\d{4})\r?\nPopis příkazce[ ]*(.+)\r?\nPopis pro příjemce[ ]*(.+)\r?\nSystémový popis[ ]*(.+)~', $cell, $matches)) {
+    $cell =  str_replace("\r\n", "\n", trim($cell, " \r\n\t"));
+    $lines = explode("\n", $cell);
+    $col0 = $col1 = $col2 = $col3 = $col4 = array();
+    foreach ($lines as $line) {
+      $col0[] = trim(mb_substr($line,  0, 17)); // 0
+      $col1[] = trim(mb_substr($line, 17, 36)); // 1
+      $col2[] = trim(mb_substr($line, 53, 23)); // 2
+      $col3[] = trim(mb_substr($line, 76, 10)); // 3
+      $col4[] = trim(mb_substr($line, 86, 14)); // 4
+    }
 
-    //  Číslo protiúčtu                VS        Částka       Datum přijetí k zaúčtování
-    //  Typ transakce                  KS        a měna                 Datum splatnosti
-    //  ID transakce                   SS                               Datum zaúčtování
+    for ($i = 0; $i <= 4; ++$i) {
+      $col = "col$i";
+      $$col = array_values(array_filter($$col, 'strlen'));
+    }
+
+    // Just a quick guess if a transaction is valid.
+    if (count($col3) == 3) {
+      // |<----Col-0--->|<---------------Col-1-------------->|<--------Col-2-------->|<--Col-3-->|<--Col-4-->|
+      // Datum zúčtování  Popis transakce                     Název protiúčtu        VS              Připsáno
+      // Datum transakce  Identifikace transakce              Protiúčet a kód banky  KS              Odepsáno
+      //                                                                             SS
+
       $transaction = new stdClass();
-      $transaction->account = $matches[1]; // 94-65078642/8060
-      $transaction->var_sym = $matches[2]; // 8256546884
-      $transaction->price = $matches[3]; // -1500,00 CZK
-      $transaction->date1 = $matches[4]; // 08.09.2011
-      $transaction->type = $matches[5]; // Úhrada
-      $transaction->const_sym = $matches[6]; // 0
-      $transaction->date2 = $matches[7]; // 08.09.2011
-      $transaction->trans_id = $matches[8]; // 000-08092011 005-005-001596020
-      $transaction->spec_s = $matches[9]; // 0
-      $transaction->date3 = $matches[10]; //  08.09.2011
-      $transaction->desc1 = preg_replace('~[ ]{2,}~', ' ', trim($matches[11], " \n\r\t")); //  STAVEBNI SPORENI - BURINKA
-      $transaction->desc2 = preg_replace('~[ ]{2,}~', ' ', trim($matches[12], " \n\r\t")); //  NA   AC-0000940060576642
-      $transaction->desc3 = preg_replace('~[ ]{2,}~', ' ', trim($matches[13], " \n\r\t")); //  Úhrada do jiné banky
+      $transaction->date1 = $col0[0]; // 20-08-2012
+      $transaction->date2 = str_replace('-', '/', $col0[1]); // 20-08-2012
+      $transaction->type = $col1[0]; // Platba na vrub vašeho účtu
+      $transaction->trans_id = $col1[1]; // 000-08092011 005-005-001596020
+      $transaction->var_sym = $col3[0]; // 8256546884
+      $transaction->const_sym = $col3[1]; // 0
+      $transaction->spec_s = $col3[2]; // 0
+      $transaction->price = mojebanka_convert_price($col4[0]); // -1 500,00 or -1.500,00
+      $transaction->account = ''; // 94-65078642/8060
+      $transaction->desc1 = ''; //  STAVEBNI SPORENI - BURINKA
+      $transaction->desc2 = ''; //  NA   AC-0000940060576642
+      $transaction->desc3 = ''; //  Úhrada do jiné banky
       $transaction->desc4 = '';
-      if ($start = strpos($cell, 'Zpráva pro příjemce')) {
-        $desc4 = substr($cell, $start + 19);
-        $desc4 = preg_replace('~\n|\r|\t~', ' ', $desc4);
-        $transaction->desc4 = preg_replace('~[ ]{2,}~', ' ', $desc4);
+
+      if (isset($col1[2])) {
+        $transaction->desc3 = $col1[2];
+        if (isset($col1[3])) {
+          $transaction->desc3 .= ' ' . $col1[3];
+        }
+      }
+
+      // Parse 2nd column
+      foreach ($col2 as $line) {
+        if (preg_match('~[0-9-]+\/[0-9]{4}~', $line)) {
+          $transaction->account = $line;
+        }
+        elseif (preg_match('~NA AC-[0-9]+~', $line)) {
+          $transaction->desc2 = $line;
+        }
+        else  {
+          $transaction->desc1 .= ($transaction->desc1 ? ' ' : '') . $line;
+        }
       }
 
       $transactions[] = $transaction;
@@ -111,11 +138,17 @@ function mojebanka_to_qif($transactions) {
     if (!empty($transaction->var_sym)) {
       $payee .= ' ' . $transaction->var_sym;
     }
+    $description = '';
+    foreach (array('type', 'desc1', 'desc2', 'desc3', 'desc4') as $field) {
+      if (!empty($transaction->{$field})) {
+        $description .= ($description ? ' ' : '') . $transaction->{$field};
+      }
+    }
     $data = '';
     $data .= 'D' . date('d/m/Y', $timestamp) . PHP_EOL;
-    $data .= 'T' . number_format ($amount, 2) . PHP_EOL;
+    $data .= 'T' . number_format($amount, 2) . PHP_EOL;
     $data .= 'P' . $payee . PHP_EOL;
-    $data .= 'M' . $transaction->desc1 . ' ' . $transaction->desc2 . ' ' . $transaction->desc3 . ' ' . $transaction->desc4 . ' ' . PHP_EOL;
+    $data .= 'M' . $description . PHP_EOL;
     fwrite($qif_file, $data . '^' . PHP_EOL);
   }
 
